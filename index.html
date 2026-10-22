@@ -188,16 +188,16 @@ function tmNN(s,na,c){var H=0.2,S=-5.7;
   for(var i=0;i<s.length-1;i++){var d=SL[s.slice(i,i+2)];H+=d[0];S+=d[1]}
   S+=0.368*(s.length-1)*Math.log(na);
   return H*1000/(S+1.987*Math.log(c/4))-273.15}
-function tmBlock(pr){
+function tmBlock(pr,r){
   var na=(+$("na").value||50)/1000,c=(+$("pc").value||250)*1e-9,adj=+$("adj").value||0;
   var ps=[pr,rc(pr)],t=ps.map(function(p){return tmNN(p,na,c)+adj}),m=Math.min(t[0],t[1]);
   var f=function(x){return x.toFixed(1)+" °C"},g=function(x){return Math.round(x)+" °C"};
   return "<div class=tmbox><h2>Melting temperature and annealing</h2><div class=tbl><table class=tt><tr><th></th><th>Forward</th><th>Reverse</th></tr>"+
-  "<tr><td>Tm (SnapGene-style)</td><td>"+f(t[0])+"</td><td>"+f(t[1])+"</td></tr>"+
+  "<tr><td>Tm, perfect match (SnapGene-style method)</td><td>"+f(t[0])+"</td><td>"+f(t[1])+"</td></tr>"+
   "<tr><td>Ideal Ta for Taq (Tm − 5 °C)</td><td colspan=2>"+f(m-5)+" (test range: "+g(m-5)+" to "+g(m)+")</td></tr>"+
   "<tr><td>Ideal Ta for Phusion (Tm + 6 to 12 °C)</td><td colspan=2>"+g(m+6)+" to "+g(m+12)+"</td></tr>"+
   "<tr><td>Phusion Ta by Thermo’s rule</td><td colspan=2>Thermo calculator Tm + 3 °C (primers &gt; 20 nt)</td></tr></table></div>"+
-  "<p class=note>Forward and reverse are complementary, so they have the same Tm. For pairs with different Tm, Ta uses the lower one. Near 72 °C, consider two-step PCR. The Tm is for the whole primer pairing perfectly (as from cycle 2 onward); in the first cycles only the part that matches the template binds, so the real Tm is lower.</p>"+
+  (r&&(r.mism>0||r.ins>0||r.del>0)?"<p class=note><b class=bad>⚠ This primer has "+(r.mism?r.mism+" mismatch(es)":"an insertion or deletion")+" relative to the template.</b> The Tm and Ta above assume perfect pairing. SnapGene accounts for the mismatches and shows a lower Tm, by several degrees. For the first PCR cycles, use the SnapGene Tm to choose Ta, or enter the difference in the calibration offset (for example, −8 if SnapGene shows 8 °C less).</p>":"")+"<p class=note>Forward and reverse are complementary, so they have the same Tm. For pairs with different Tm, Ta uses the lower one. Near 72 °C, consider two-step PCR. The Tm is for the whole primer pairing perfectly (as from cycle 2 onward); in the first cycles only the part that matches the template binds, so the real Tm is lower.</p>"+
   "<details><summary>How these values were calculated</summary>"+
   "<p><b>Tm (nearest-neighbor).</b> <code>Tm = 1000·ΔH / (ΔS + R·ln(C/4)) − 273.15</code>, with ΔH in kcal/mol, ΔS in cal/(K·mol), R = 1.987 and C = primer concentration. ΔH and ΔS are the sum of the stacking parameters of each pair of neighboring bases, plus initiation (ΔH 0.2 and ΔS −5.7 once, and 2.2 and 6.9 for each A·T end). Parameters from SantaLucia &amp; Hicks (2004).</p>"+
   "<p><b>Salt correction.</b> <code>ΔS(Na⁺) = ΔS(1 M) + 0.368·(N − 1)·ln[Na⁺]</code>, from SantaLucia (1998), with N = primer length. Defaults: 50 mM Na⁺ and 250 nM primer, the assumptions described by SnapGene.</p>"+
@@ -235,7 +235,7 @@ function run(){
     out.innerHTML="<div class=pr><h2>Forward primer (5′→3′)</h2><div class=seqrow><div class=seq id=f>"+h[0]+"</div><button data-c=f>Copy</button></div></div>"+
     "<div class=pr><h2>Reverse primer (5′→3′)</h2><div class=seqrow><div class=seq id=v>"+h[1]+"</div><button data-c=v>Copy</button></div></div>"+
     "<div class=stats><div class=stat><span>Length</span><strong>"+p.len+" nt</strong></div><div class=stat><span>Tm (QuikChange formula)</span><strong>"+p.st.tm.toFixed(1)+" °C</strong></div><div class=stat><span>GC</span><strong>"+p.st.gc+"%</strong></div><div class=stat><span>125 ng ≈</span><strong>"+pm+" pmol</strong></div></div>"+
-    "<ul class=chk>"+chk.map(function(c){return "<li class="+(c[0]?"ok":"bad")+">"+(c[0]?"✓ ":"⚠ ")+c[1]+"</li>"}).join("")+"</ul>"+tmBlock(p.pr)+orderBlock(p.pr)+
+    "<ul class=chk>"+chk.map(function(c){return "<li class="+(c[0]?"ok":"bad")+">"+(c[0]?"✓ ":"⚠ ")+c[1]+"</li>"}).join("")+"</ul>"+tmBlock(p.pr,r)+orderBlock(p.pr)+
     "<p class=note>Mutation: "+r.desc+". Tm = 81.5 + 0.41(%GC) − 675/N − %mismatch"+tmtxt+". Mutated bases are highlighted.</p>";
     out.querySelectorAll("button[data-c]").forEach(function(b){b.onclick=function(){copy(b.dataset.c,b)}});
   }catch(e){out.innerHTML="<p class=err>"+(typeof e==="string"?e:"Error: "+e.message)+"</p>"}

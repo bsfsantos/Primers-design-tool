@@ -49,7 +49,7 @@ When no candidate meets every criterion, the tool returns the best one available
 - **Ta for Taq:** Tm − 5 °C (test range Tm − 5 to Tm).
 - **Ta for Phusion:** Tm + 6 to 12 °C, the rule from SnapGene’s documentation for polymerases with a dsDNA-binding domain (Phusion, Phire, Q5). Thermo’s calculator uses modified Breslauer with Ta = Thermo Tm + 3 °C for primers > 20 nt; that method is not implemented here.
 - The nearest-neighbor Tm is not comparable to the Tm ≥ 78 °C of the QuikChange formula, which is a different scale.
-- Internal mismatches, loops, Mg2+, dNTPs and DMSO are not modeled.
+- Internal mismatches, loops, Mg2+, dNTPs and DMSO are not modeled. For primers with mismatches, insertions or deletions, the Tm shown assumes perfect pairing and is higher than the value SnapGene reports (which accounts for the mismatches). The page warns about this. In a Cys to Ala test (TGC to GCC, 2 mismatches), the tool showed 67.2 °C and SnapGene 59 °C. Use SnapGene’s Tm for the first PCR cycles, or enter the difference in the calibration offset.
 
 ## Order to the supplier
 
