@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QuikChange primer design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f4;--card:#fff;--ink:#14202b;--mute:#5a6b7a;--line:#cfd8e0;--acc:#b4235a;--ok:#14765b;--warn:#a85a00;--accbg:#fbe6ef;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171d;--card:#18222b;--ink:#e6edf2;--mute:#97a8b6;--line:#2c3a46;--acc:#ff7fae;--ok:#4cc9a0;--warn:#f0a94a;--accbg:#3a1c2a}}
+:root[data-theme="dark"]{--bg:#10171d;--card:#18222b;--ink:#e6edf2;--mute:#97a8b6;--line:#2c3a46;--acc:#ff7fae;--ok:#4cc9a0;--warn:#f0a94a;--accbg:#3a1c2a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.6rem;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 20px}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+label{display:block;font-weight:600;font-size:.9rem;margin:14px 0 4px}
+label:first-child{margin-top:0}
+textarea,input,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+textarea{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.85rem;min-height:150px;resize:vertical}
+input,select{font-family:"IBM Plex Mono",ui-monospace,monospace}
+:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.hint{color:var(--mute);font-size:.8rem;margin:4px 0 0}
+.row{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+button{font:inherit;font-weight:600;border-radius:6px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button.main{background:var(--acc);border-color:var(--acc);color:#fff}
+:root[data-theme="dark"] button.main{color:#10171d}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.main{color:#10171d}}
+.err{color:var(--warn);font-weight:600}
+.empty{color:var(--mute)}
+.pr{margin-bottom:18px}
+.pr h2{font-size:.95rem;margin:0 0 6px}
+.seq{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.95rem;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.seq b{color:var(--acc);background:var(--accbg);font-weight:600;border-radius:2px}
+.seq i{display:inline-block;width:0;height:1.1em;border-left:2px solid var(--acc);vertical-align:text-bottom;margin:0 1px}
+.seqrow{display:flex;gap:8px;align-items:stretch}
+.seqrow .seq{flex:1;min-width:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 14px}
+@media(max-width:480px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.stat span{display:block;color:var(--mute);font-size:.75rem}
+.stat strong{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:1.1rem}
+ul.chk{list-style:none;padding:0;margin:0}
+ul.chk li{padding:3px 0;font-size:.92rem}
+.ok{color:var(--ok)}.bad{color:var(--warn)}
+.note{color:var(--mute);font-size:.85rem;margin-top:12px}
+.tmbox{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.tmbox h2{font-size:.95rem;margin:0 0 8px}
+table.tt{width:100%;border-collapse:collapse;font-size:.9rem}
+table.tt th,table.tt td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+table.tt td+td,table.tt th+th{font-family:"IBM Plex Mono",ui-monospace,monospace}
+.tmbox .tbl{overflow-x:auto}
+details{margin-top:12px;font-size:.88rem}details summary{cursor:pointer;font-weight:600}details p,details li{color:var(--mute)}details b,details code{color:var(--ink)}details code{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.82rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
+</head>
+<body>
+<main>
+<h1>QuikChange primer design</h1>
+<p class="sub">Paste the sequence, describe the mutation and get a primer pair following the QuikChange II rules.</p>
+<div class="grid">
+<section class="panel" aria-label="Input">
+  <label for="seq">Sequence (DNA, FASTA accepted)</label>
+  <textarea id="seq" spellcheck="false" placeholder="ATGAGCAAAGGAGAA…"></textarea>
+  <p class="hint" id="cnt">0 nt</p>
+  <details><summary>How the sequence and positions work</summary>
+    <ul>
+      <li>Paste the full gene or plasmid if possible. A fragment also works if it has at least 60 nt, ideally 30 to 50 bases on each side of the mutation. The primer itself uses about 10 to 22 bases on each side.</li>
+      <li>Positions are counted from the first pasted base (position 1). With a fragment, <code>A123G</code> refers to the 123rd base of the fragment, not of the gene.</li>
+      <li>For amino acid substitutions, enter the position of the A of the ATG within the pasted sequence. If the fragment starts elsewhere in the gene, use a nucleotide-level mutation instead.</li>
+      <li>The tool checks that the original base or amino acid matches your sequence and warns you if it does not, which helps catch numbering errors.</li>
+      <li>Paste the 5′→3′ strand, the same one as the forward primer. The reverse primer is its reverse complement.</li>
+      <li>The tool picks the shortest primer that meets all criteria. Your own primer can be longer or placed differently and still be valid, so compare Tm, GC, length and G/C ends rather than the exact sequence.</li>
+    </ul>
+  </details>
+  <label for="tipo">Mutation type</label>
+  <select id="tipo">
+    <option value="nt">Nucleotide substitution</option>
+    <option value="aa">Amino acid substitution</option>
+    <option value="ins">Insertion</option>
+    <option value="del">Deletion</option>
+  </select>
+  <label for="mut">Mutation</label>
+  <input id="mut" autocomplete="off" spellcheck="false">
+  <p class="hint" id="mhint"></p>
+  <details><summary>How to write an amino acid mutation</summary>
+    <ul>
+      <li>Choose <b>Amino acid substitution</b> and write the original amino acid, the residue number and the new one. To change cysteine 45 to alanine, write <code>C45A</code>.</li>
+      <li>Residues are counted from the ATG, where the methionine is residue 1. Enter in the field below the position of the A of that ATG in the pasted sequence. Example: if the ATG starts at position 250 and the cysteine is residue 45, write <code>C45A</code> and <code>250</code>.</li>
+      <li>The tool reads the codon of that residue, checks that it encodes the original amino acid and warns you if it does not. It then picks the new codon with the fewest base changes (for example, TGC to GCC for Cys to Ala).</li>
+      <li>If you already know where the residue sits in the pasted sequence (for example, position 996 of the plasmid), fill in the optional field "position of the residue" and write only the residue number in the mutation, such as <code>C50A</code>. The tool finds the codon near that position, checks that it encodes the original amino acid and ignores the ATG position. The codon it used is shown in the result.</li>
+      <li>If your plasmid has a tag before the gene, or your protein numbering does not start at the ATG of the pasted sequence, count from the first codon of the numbering you use and enter the position of that codon.</li>
+      <li>If the numbering is complicated, use <b>Nucleotide substitution</b> instead: find the codon in the sequence, count the position of the base that changes and write, for example, <code>T123G</code>.</li>
+      <li>If you are not sure of the residue number, try a guess. If it is wrong, the error message tells you which amino acid was found at that position.</li>
+    </ul>
+  </details>
+  <div id="cdsbox">
+    <label for="cds">Position of the A of the ATG in the sequence</label>
+    <input id="cds" type="number" min="1" value="1">
+    <label for="cpos">Or: position of the residue in the sequence (optional)</label>
+    <input id="cpos" type="number" min="1" placeholder="e.g. 996">
+    <p class="hint">If filled, this replaces the ATG position above. Enter where the residue to mutate sits in the pasted sequence (any of its three bases works).</p>
+  </div>
+  <label for="nm">Construct name (for the order)</label>
+  <input id="nm" autocomplete="off" spellcheck="false" placeholder="e.g. GFP_T9A">
+  <div class="two">
+    <div><label for="na">Na⁺ (mM)</label><input id="na" type="number" min="1" value="50"></div>
+    <div><label for="pc">Primer (nM)</label><input id="pc" type="number" min="1" value="250"></div>
+  </div>
+  <label for="adj">Tm calibration offset (°C)</label>
+  <input id="adj" type="number" step="0.1" value="0">
+  <p class="hint">Defaults: 50 mM Na⁺ and 250 nM primer, as assumed by SnapGene. Use the offset to match the Tm to SnapGene’s.</p>
+  <div class="row">
+    <button class="main" id="go">Design primers</button>
+    <button id="ex">Example</button>
+  </div>
+</section>
+<section class="panel" aria-live="polite" id="out"><p class="empty">Your primers will appear here.</p></section>
+</div>
+</main>
+<script>
+var B="TCAG",AA="FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",CODE={};
+for(var i=0;i<64;i++)CODE[B[i>>4]+B[(i>>2)&3]+B[i&3]]=AA[i];
+var $=function(id){return document.getElementById(id)};
+var HINTS={nt:["A123G","Original base, position, new base."],aa:["L45A","Original amino acid, position in the peptide, new amino acid (use * for stop)."],ins:["123 GATTACA","Position after which to insert, a space, then the sequence to insert."],del:["123-125","First and last position to delete (or a single position)."]};
+function upd(){var h=HINTS[$("tipo").value];$("mut").placeholder=h[0];$("mhint").textContent=h[1];$("cdsbox").style.display=$("tipo").value==="aa"?"block":"none"}
+function clean(s){return s.split(/\r?\n/).filter(function(l){return l[0]!==">"}).join("").toUpperCase().replace(/U/g,"T").replace(/[^ACGT]/g,"")}
+function rc(s){var m={A:"T",T:"A",G:"C",C:"G"};return s.split("").reverse().map(function(c){return m[c]}).join("")}
+function gcN(s){return (s.match(/[GC]/g)||[]).length}
+function parse(seq,tipo,txt,cds){
+  txt=txt.trim().toUpperCase();var m,p;
+  if(tipo==="nt"){m=txt.match(/^([ACGT])(\d+)([ACGT])$/);if(!m)throw"Expected format: A123G";
+    p=+m[2];if(p<1||p>seq.length)throw"Position is outside the sequence.";
+    if(seq[p-1]!==m[1])throw"At position "+p+" the sequence has "+seq[p-1]+", not "+m[1]+".";
+    if(m[1]===m[3])throw"The new base is the same as the original.";
+    return {mut:seq.slice(0,p-1)+m[3]+seq.slice(p),ms:p-1,ml:1,mism:1,ins:0,desc:txt}}
+  if(tipo==="aa"){m=txt.match(/^([A-Z*])(\d+)([A-Z*])$/);if(!m)throw"Expected format: L45A";
+    var n=+m[2],cp=+$("cpos").value,cs=cds-1+(n-1)*3;
+    if(cp){var cands=[cp,cp-1,cp-2].filter(function(q){return q>=1&&CODE[seq.slice(q-1,q+2)]===m[1]});
+      if(!cands.length)throw"No codon for "+m[1]+" found starting at positions "+Math.max(cp-2,1)+" to "+cp+". Check the position.";
+      cs=cands[0]-1}
+    var cod=seq.slice(cs,cs+3);
+    if(cod.length<3)throw"Codon is outside the sequence.";
+    if(CODE[cod]!==m[1])throw"At residue "+n+" the sequence encodes "+CODE[cod]+" ("+cod+"), not "+m[1]+". Check the ATG position.";
+    var best=null;Object.keys(CODE).forEach(function(c){if(CODE[c]!==m[3])return;var d=0;for(var i=0;i<3;i++)if(c[i]!==cod[i])d++;
+      var k=[d,-gcN(c)];if(d&&(!best||k[0]<best.k[0]||(k[0]===best.k[0]&&k[1]<best.k[1])))best={c:c,k:k}});
+    if(!best)throw"The new amino acid is the same as the original.";
+    var f=-1,l=-1,d=0;for(var j=0;j<3;j++)if(best.c[j]!==cod[j]){if(f<0)f=j;l=j;d++}
+    return {mut:seq.slice(0,cs)+best.c+seq.slice(cs+3),ms:cs+f,ml:l-f+1,mism:d,ins:0,desc:txt+" (codon at "+(cs+1)+": "+cod+" → "+best.c+")"}}
+  if(tipo==="ins"){m=txt.match(/^(\d+)\s+([ACGT]+)$/);if(!m)throw"Expected format: 123 GATTACA";
+    p=+m[1];if(p<0||p>seq.length)throw"Position is outside the sequence.";
+    return {mut:seq.slice(0,p)+m[2]+seq.slice(p),ms:p,ml:m[2].length,mism:0,ins:m[2].length,desc:"insertion of "+m[2].length+" nt after "+p}}
+  m=txt.match(/^(\d+)(?:\s*-\s*(\d+))?$/);if(!m)throw"Expected format: 123-125";
+  var a=+m[1],b=m[2]?+m[2]:a;if(a<1||b<a||b>seq.length)throw"Invalid range.";
+  return {mut:seq.slice(0,a-1)+seq.slice(b),ms:a-1,ml:0,mism:0,ins:0,del:b-a+1,desc:"deletion of "+(b-a+1)+" nt ("+a+"–"+b+")"}
+}
+function stats(pr,len,d){var gc=Math.round(gcN(pr)/len*100),N=len-d.ins,mm=Math.round(d.mism/len*100);
+  var tm=81.5+0.41*gc-675/N-mm;return {gc:gc,tm:tm}}
+function design(r){
+  var best=null;
+  for(var len=25;len<=60;len++)for(var l=10;l<=len-r.ml-10;l++){
+    var rr=len-r.ml-l,s=r.ms-l,e=r.ms+r.ml+rr;if(s<0||e>r.mut.length)continue;
+    var pr=r.mut.slice(s,e),st=stats(pr,len,r),e5=/[GC]/.test(pr[0]),e3=/[GC]/.test(pr[len-1]);
+    var bad=(st.tm<78?1:0)+(st.gc<40?1:0)+(e5?0:1)+(e3?0:1);
+    var key=[bad,len>45?1:0,len,Math.abs(l-rr)];
+    if(!best||cmp(key,best.key)<0)best={key:key,pr:pr,l:l,r:rr,len:len,st:st,e5:e5,e3:e3}}
+  return best}
+function cmp(a,b){for(var i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]-b[i];return 0}
+function esc(s){return s}
+function fwdHtml(p,ml){return p.l?p.pr.slice(0,p.l):""}
+function html(p,r){
+  var L=p.pr.slice(0,p.l),M=p.pr.slice(p.l,p.l+r.ml),R=p.pr.slice(p.l+r.ml);
+  var mark=r.ml?"<b>"+M+"</b>":"<i title=\"deletion point\"></i>";
+  var f=L+mark+R;
+  var Mr=r.ml?"<b>"+rc(M)+"</b>":"<i title=\"deletion point\"></i>";
+  var v=rc(R)+Mr+rc(L);
+  return [f,v]}
+function copy(id,btn){var t=$(id).textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).catch(function(){var a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(e){}a.remove()});btn.textContent="Copied";setTimeout(function(){btn.textContent="Copy"},1200)}
+var SL={AA:[-7.6,-21.3],TT:[-7.6,-21.3],AT:[-7.2,-20.4],TA:[-7.2,-21.3],CA:[-8.5,-22.7],TG:[-8.5,-22.7],GT:[-8.4,-22.4],AC:[-8.4,-22.4],CT:[-7.8,-21.0],AG:[-7.8,-21.0],GA:[-8.2,-22.2],TC:[-8.2,-22.2],CG:[-10.6,-27.2],GC:[-9.8,-24.4],GG:[-8.0,-19.9],CC:[-8.0,-19.9]};
+function tmNN(s,na,c){var H=0.2,S=-5.7;
+  [s[0],s[s.length-1]].forEach(function(b){if(b==="A"||b==="T"){H+=2.2;S+=6.9}});
+  for(var i=0;i<s.length-1;i++){var d=SL[s.slice(i,i+2)];H+=d[0];S+=d[1]}
+  S+=0.368*(s.length-1)*Math.log(na);
+  return H*1000/(S+1.987*Math.log(c/4))-273.15}
+function tmBlock(pr){
+  var na=(+$("na").value||50)/1000,c=(+$("pc").value||250)*1e-9,adj=+$("adj").value||0;
+  var ps=[pr,rc(pr)],t=ps.map(function(p){return tmNN(p,na,c)+adj}),m=Math.min(t[0],t[1]);
+  var f=function(x){return x.toFixed(1)+" °C"},g=function(x){return Math.round(x)+" °C"};
+  return "<div class=tmbox><h2>Melting temperature and annealing</h2><div class=tbl><table class=tt><tr><th></th><th>Forward</th><th>Reverse</th></tr>"+
+  "<tr><td>Tm (SnapGene-style)</td><td>"+f(t[0])+"</td><td>"+f(t[1])+"</td></tr>"+
+  "<tr><td>Ideal Ta for Taq (Tm − 5 °C)</td><td colspan=2>"+f(m-5)+" (test range: "+g(m-5)+" to "+g(m)+")</td></tr>"+
+  "<tr><td>Ideal Ta for Phusion (Tm + 6 to 12 °C)</td><td colspan=2>"+g(m+6)+" to "+g(m+12)+"</td></tr>"+
+  "<tr><td>Phusion Ta by Thermo’s rule</td><td colspan=2>Thermo calculator Tm + 3 °C (primers &gt; 20 nt)</td></tr></table></div>"+
+  "<p class=note>Forward and reverse are complementary, so they have the same Tm. For pairs with different Tm, Ta uses the lower one. Near 72 °C, consider two-step PCR. The Tm is for the whole primer pairing perfectly (as from cycle 2 onward); in the first cycles only the part that matches the template binds, so the real Tm is lower.</p>"+
+  "<details><summary>How these values were calculated</summary>"+
+  "<p><b>Tm (nearest-neighbor).</b> <code>Tm = 1000·ΔH / (ΔS + R·ln(C/4)) − 273.15</code>, with ΔH in kcal/mol, ΔS in cal/(K·mol), R = 1.987 and C = primer concentration. ΔH and ΔS are the sum of the stacking parameters of each pair of neighboring bases, plus initiation (ΔH 0.2 and ΔS −5.7 once, and 2.2 and 6.9 for each A·T end). Parameters from SantaLucia &amp; Hicks (2004).</p>"+
+  "<p><b>Salt correction.</b> <code>ΔS(Na⁺) = ΔS(1 M) + 0.368·(N − 1)·ln[Na⁺]</code>, from SantaLucia (1998), with N = primer length. Defaults: 50 mM Na⁺ and 250 nM primer, the assumptions described by SnapGene.</p>"+
+  "<p><b>Taq annealing.</b> Ta = Tm − 5 °C. SnapGene states that for most polymerases the optimal Ta is 0 to 5 °C below the Tm.</p>"+
+  "<p><b>Phusion annealing.</b> Phusion, Phire and Q5 have a dsDNA-binding domain that stabilizes the primer on the template, so the optimal Ta is about 6 to 12 °C above the nearest-neighbor Tm (SnapGene documentation). Thermo uses a different method: a calculator based on modified Breslauer, with Ta = lower Tm + 3 °C for primers &gt; 20 nt and Ta = lower Tm for primers ≤ 20 nt. That method is not implemented here.</p>"+
+  "<p><b>Design criteria.</b> Tm = 81.5 + 0.41(%GC) − 675/N − %mismatch, with N excluding the inserted or deleted bases for insertions and deletions (Agilent QuikChange II manual). This Tm ≥ 78 °C is a different scale and is not comparable to the nearest-neighbor Tm.</p>"+
+  "<p><b>Differences from SnapGene.</b> This tool does not model internal mismatches, loops, Mg²⁺, dNTPs or DMSO, so values can differ by a few degrees. Use the calibration offset to match the Tm of one primer to SnapGene.</p>"+
+  "<p><b>References.</b></p><ul>"+
+  "<li>SantaLucia J Jr (1998) A unified view of polymer, dumbbell, and oligonucleotide DNA nearest-neighbor thermodynamics. Proc Natl Acad Sci USA 95:1460–1465.</li>"+
+  "<li>SantaLucia J Jr, Hicks D (2004) The thermodynamics of DNA structural motifs. Annu Rev Biophys Biomol Struct 33:415–440.</li>"+
+  "<li>SnapGene: How does SnapGene estimate oligonucleotide primer melting temperatures (Tm)? support.snapgene.com/hc/en-us/articles/10242720294036</li>"+
+  "<li>SnapGene: Can I configure SnapGene to show primer Tm values suitable for PCR polymerases such as Phusion, Phire and Q5? support.snapgene.com/hc/en-us/articles/10242720499220</li>"+
+  "<li>Thermo Scientific: Important instructions on calculating PCR annealing temperatures (Phusion, Phire).</li>"+
+  "<li>Agilent Technologies. QuikChange II Site-Directed Mutagenesis Kit, Instruction Manual, Catalog #200523 (10 reactions) and #200524 (30 reactions), Revision E.0. Source of the primer design guidelines and the Tm formula.</li></ul></details></div>"}
+function orderBlock(pr){
+  var N=pr.length,nm=($("nm").value.trim().replace(/\s+/g,"_"))||"primer",pmol=125000/(330*N);
+  var txt=nm+"_F\t"+pr+"\n"+nm+"_R\t"+rc(pr);
+  return "<div class=tmbox><h2>Order to the supplier</h2><div class=seqrow><div class=seq id=ot style=\"white-space:pre-wrap\">"+txt+"</div><button data-c=ot>Copy</button></div>"+
+  "<div class=tbl style=\"margin-top:10px\"><table class=tt><tr><td>Scale</td><td>0.025 µmol (25 nmol)</td></tr><tr><td>Purification</td><td>Desalt</td></tr><tr><td>Format</td><td>Dry or in TRIS</td></tr><tr><td>Concentration</td><td>100 µM</td></tr><tr><td>Tubes</td><td>1 per primer (2 in total)</td></tr></table></div>"+
+  "<p class=note><b class=bad>⚠ Purification:</b> the QuikChange II manual calls for primers purified by FPLC or PAGE and states that unpurified primers significantly decrease mutation efficiency. Desalting is not that purification. If efficiency is low, try PAGE- or HPLC-purified primers (check with the supplier whether it is available at the 0.025 µmol scale).</p>"+
+  "<p class=note><b>Resuspension.</b> If the tube arrives dry, add 10 µL of TRIS (or water) per nmol listed on the supplier’s data sheet to reach 100 µM (for example, 20 nmol → 200 µL). <b>In the reaction.</b> 125 ng of primer ≈ "+pmol.toFixed(1)+" pmol, or "+(pmol/100).toFixed(2)+" µL of the 100 µM stock. Because this volume is hard to pipette, dilute the stock 1:10 (10 µM) and use "+(pmol/10).toFixed(2)+" µL per reaction. This uses 330 g/mol per base, so check against the molecular weight on the supplier’s data sheet.</p></div>"}
+function run(){
+  var out=$("out"),seq=clean($("seq").value);
+  try{
+    if(seq.length<60)throw"Paste a sequence of at least 60 nt.";
+    var r=parse(seq,$("tipo").value,$("mut").value,+$("cds").value||1);
+    var p=design(r);if(!p)throw"The mutation is too close to the end of the sequence (about 10 nt are needed on each side).";
+    var h=html(p,r),pm=(125*1000/(330*p.len)).toFixed(1);
+    var chk=[[p.st.tm>=78,"Tm "+p.st.tm.toFixed(1)+" °C (minimum 78 °C)"],
+      [p.len>=25&&p.len<=45,"Length "+p.len+" nt (25 to 45)"+(p.len>45?" — above 45, higher risk of secondary structure":"")],
+      [p.st.gc>=40,"GC "+p.st.gc+"% (minimum 40%)"],
+      [p.e5&&p.e3,"Ends in G/C at both ends"],
+      [p.l>=10&&p.r>=10,"Flanks of "+p.l+" and "+p.r+" nt (10 to 15 recommended)"+(p.l>15||p.r>15?" — one flank exceeds 15":"")]];
+    var tmtxt=r.ins?" (N excludes the "+r.ins+" inserted bases)":"";
+    out.innerHTML="<div class=pr><h2>Forward primer (5′→3′)</h2><div class=seqrow><div class=seq id=f>"+h[0]+"</div><button data-c=f>Copy</button></div></div>"+
+    "<div class=pr><h2>Reverse primer (5′→3′)</h2><div class=seqrow><div class=seq id=v>"+h[1]+"</div><button data-c=v>Copy</button></div></div>"+
+    "<div class=stats><div class=stat><span>Length</span><strong>"+p.len+" nt</strong></div><div class=stat><span>Tm (QuikChange formula)</span><strong>"+p.st.tm.toFixed(1)+" °C</strong></div><div class=stat><span>GC</span><strong>"+p.st.gc+"%</strong></div><div class=stat><span>125 ng ≈</span><strong>"+pm+" pmol</strong></div></div>"+
+    "<ul class=chk>"+chk.map(function(c){return "<li class="+(c[0]?"ok":"bad")+">"+(c[0]?"✓ ":"⚠ ")+c[1]+"</li>"}).join("")+"</ul>"+tmBlock(p.pr)+orderBlock(p.pr)+
+    "<p class=note>Mutation: "+r.desc+". Tm = 81.5 + 0.41(%GC) − 675/N − %mismatch"+tmtxt+". Mutated bases are highlighted.</p>";
+    out.querySelectorAll("button[data-c]").forEach(function(b){b.onclick=function(){copy(b.dataset.c,b)}});
+  }catch(e){out.innerHTML="<p class=err>"+(typeof e==="string"?e:"Error: "+e.message)+"</p>"}
+}
+$("seq").oninput=function(){$("cnt").textContent=clean($("seq").value).length+" nt"};
+$("tipo").onchange=function(){upd();$("mut").value=""};
+$("go").onclick=run;
+$("mut").onkeydown=function(e){if(e.key==="Enter")run()};
+$("ex").onclick=function(){$("seq").value="ATGAGCAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAATGGGCACAAATTTTCTGTCAGTGGAGAGGGTGAAGGTGATGCAACATACGGAAAACTTACCCTTAAATTTATTTGCACTACTGGAAAACTACCTGTTCCATGG";
+  $("tipo").value="aa";upd();$("mut").value="T9A";$("cds").value=1;$("seq").oninput();run()};
+upd();
+</script>
+</body>
+</html>
