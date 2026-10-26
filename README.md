@@ -74,7 +74,3 @@ Note: the QuikChange II manual calls for primers purified by FPLC or PAGE, and d
 - SnapGene: https://support.snapgene.com/hc/en-us/articles/10242720294036 and https://support.snapgene.com/hc/en-us/articles/10242720499220
 - Thermo Scientific: Important instructions on calculating PCR annealing temperatures (Phusion, Phire).
 - Agilent Technologies. QuikChange II Site-Directed Mutagenesis Kit, Instruction Manual, Catalog #200523 (10 reactions) and #200524 (30 reactions), Revision E.0.
-
-## Publish with GitHub Pages
-
-In *Settings → Pages*, choose the `main` branch and the root folder. The tool will be available at `https://YOUR-USERNAME.github.io/REPO-NAME/`.
