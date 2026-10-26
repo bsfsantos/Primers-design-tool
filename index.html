@@ -107,6 +107,12 @@ details{margin-top:12px;font-size:.88rem}details summary{cursor:pointer;font-wei
     <input id="cpos" type="number" min="1" placeholder="e.g. 996">
     <p class="hint">If filled, this replaces the ATG position above. Enter where the residue to mutate sits in the pasted sequence (any of its three bases works).</p>
   </div>
+  <label for="tg">Target Tm (°C, optional)</label>
+  <div class="two">
+    <input id="tg" type="number" step="0.5" min="40" max="95" placeholder="e.g. 78">
+    <select id="tgm"><option value="qc">QuikChange formula</option><option value="nn">Nearest-neighbor (with offset)</option></select>
+  </div>
+  <p class="hint">Leave empty for the QuikChange default (Tm ≥ 78 °C). With a target, the tool picks the primer closest to it that still ends in G/C, has GC ≥ 40% and keeps at least 10 nt on each side. Nearest-neighbor assumes perfect pairing, so SnapGene shows a lower value for primers with mismatches.</p>
   <label for="nm">Construct name (for the order)</label>
   <input id="nm" autocomplete="off" spellcheck="false" placeholder="e.g. GFP_T9A">
   <div class="two">
@@ -163,13 +169,14 @@ function parse(seq,tipo,txt,cds){
 function stats(pr,len,d){var gc=Math.round(gcN(pr)/len*100),N=len-d.ins,mm=Math.round(d.mism/len*100);
   var tm=81.5+0.41*gc-675/N-mm;return {gc:gc,tm:tm}}
 function design(r){
-  var best=null;
+  var best=null,tg=+$("tg").value||0,tgm=$("tgm").value,na=(+$("na").value||50)/1000,pc=(+$("pc").value||250)*1e-9,adj=+$("adj").value||0;
   for(var len=25;len<=60;len++)for(var l=10;l<=len-r.ml-10;l++){
     var rr=len-r.ml-l,s=r.ms-l,e=r.ms+r.ml+rr;if(s<0||e>r.mut.length)continue;
     var pr=r.mut.slice(s,e),st=stats(pr,len,r),e5=/[GC]/.test(pr[0]),e3=/[GC]/.test(pr[len-1]);
-    var bad=(st.tm<78?1:0)+(st.gc<40?1:0)+(e5?0:1)+(e3?0:1);
-    var key=[bad,len>45?1:0,len,Math.abs(l-rr)];
-    if(!best||cmp(key,best.key)<0)best={key:key,pr:pr,l:l,r:rr,len:len,st:st,e5:e5,e3:e3}}
+    var tv=tg?(tgm==="nn"?tmNN(pr,na,pc)+adj:st.tm):0;
+    var bad=(tg?0:(st.tm<78?1:0))+(st.gc<40?1:0)+(e5?0:1)+(e3?0:1);
+    var key=tg?[bad,len>45?1:0,Math.round(Math.abs(tv-tg)*2),len,Math.abs(l-rr)]:[bad,len>45?1:0,len,Math.abs(l-rr)];
+    if(!best||cmp(key,best.key)<0)best={key:key,pr:pr,l:l,r:rr,len:len,st:st,e5:e5,e3:e3,tg:tg?{t:tg,v:tv,m:tgm==="nn"?"nearest-neighbor":"QuikChange formula"}:null}}
   return best}
 function cmp(a,b){for(var i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]-b[i];return 0}
 function esc(s){return s}
@@ -226,11 +233,11 @@ function run(){
     var r=parse(seq,$("tipo").value,$("mut").value,+$("cds").value||1);
     var p=design(r);if(!p)throw"The mutation is too close to the end of the sequence (about 10 nt are needed on each side).";
     var h=html(p,r),pm=(125*1000/(330*p.len)).toFixed(1);
-    var chk=[[p.st.tm>=78,"Tm "+p.st.tm.toFixed(1)+" °C (minimum 78 °C)"],
+    var chk=(p.tg?[[Math.abs(p.tg.v-p.tg.t)<=1,"Tm ("+p.tg.m+") "+p.tg.v.toFixed(1)+" °C (target "+p.tg.t+" °C ±1)"],[p.st.tm>=78,"QuikChange formula Tm "+p.st.tm.toFixed(1)+" °C (the manual asks for ≥ 78 °C)"]]:[[p.st.tm>=78,"Tm "+p.st.tm.toFixed(1)+" °C (minimum 78 °C)"]]).concat([
       [p.len>=25&&p.len<=45,"Length "+p.len+" nt (25 to 45)"+(p.len>45?" — above 45, higher risk of secondary structure":"")],
       [p.st.gc>=40,"GC "+p.st.gc+"% (minimum 40%)"],
       [p.e5&&p.e3,"Ends in G/C at both ends"],
-      [p.l>=10&&p.r>=10,"Flanks of "+p.l+" and "+p.r+" nt (10 to 15 recommended)"+(p.l>15||p.r>15?" — one flank exceeds 15":"")]];
+      [p.l>=10&&p.r>=10,"Flanks of "+p.l+" and "+p.r+" nt (10 to 15 recommended)"+(p.l>15||p.r>15?" — one flank exceeds 15":"")]]);
     var tmtxt=r.ins?" (N excludes the "+r.ins+" inserted bases)":"";
     out.innerHTML="<div class=pr><h2>Forward primer (5′→3′)</h2><div class=seqrow><div class=seq id=f>"+h[0]+"</div><button data-c=f>Copy</button></div></div>"+
     "<div class=pr><h2>Reverse primer (5′→3′)</h2><div class=seqrow><div class=seq id=v>"+h[1]+"</div><button data-c=v>Copy</button></div></div>"+

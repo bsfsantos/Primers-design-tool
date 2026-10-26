@@ -43,6 +43,10 @@ For amino acid substitutions, enter the position of the A of the ATG in the past
 
 When no candidate meets every criterion, the tool returns the best one available and flags what is missing.
 
+## Target Tm
+
+Optionally, enter the Tm you want the primer to have and choose which Tm it refers to: the QuikChange formula or the nearest-neighbor Tm (which uses the calibration offset). The tool then picks the primer closest to that value that still ends in G/C, has GC ≥ 40% and keeps at least 10 nt on each side of the mutation. If the target cannot be reached within 25 to 60 nt, it returns the closest primer and flags the check. Leave the field empty for the default behavior (Tm ≥ 78 °C by the QuikChange formula, shortest primer that meets all criteria). The nearest-neighbor Tm assumes perfect pairing, so SnapGene reports a lower value for primers with mismatches.
+
 ## Melting temperature and annealing
 
 - **Tm of each primer** by nearest-neighbor: `Tm = 1000·ΔH / (ΔS + R·ln(C/4)) − 273.15`, with SantaLucia & Hicks (2004) parameters and the SantaLucia (1998) salt correction: `ΔS(Na+) = ΔS(1 M) + 0.368·(N − 1)·ln[Na+]`. Defaults: 50 mM Na+ and 250 nM primer, the assumptions described by SnapGene. A calibration offset field lets you match the Tm to SnapGene.
